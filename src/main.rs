@@ -3,16 +3,45 @@ use rustyline::Editor;
 mod lexer;
 mod parser;
 
-use crate::{
-    lexer::{Lexer, TokenType},
-    parser::Parser,
-};
+use crate::{lexer::Lexer, parser::Parser};
+struct Repl {
+    print_tokens: bool,
+    print_ast: bool,
+}
+
+impl Repl {
+    pub fn toggle_tokens(&mut self) {
+        self.print_tokens = !self.print_tokens;
+        println!(
+            "Tokens {}",
+            if self.print_tokens {
+                "enabled"
+            } else {
+                "disabled"
+            }
+        );
+    }
+
+    pub fn toggle_ast(&mut self) {
+        self.print_ast = !self.print_ast;
+        println!(
+            "Ast {}",
+            if self.print_ast {
+                "enabled"
+            } else {
+                "disabled"
+            }
+        );
+    }
+}
 
 fn main() {
     let mut rl = Editor::<()>::new();
 
-    let mut print_tokens = true;
-    let mut print_ast = true;
+    let mut repl = Repl {
+        print_tokens: true,
+        print_ast: true,
+    };
 
     loop {
         let readline = rl.readline(" >> ");
@@ -20,47 +49,27 @@ fn main() {
             Ok(line) => {
                 match line.as_str() {
                     "_tokens" => {
-                        print_tokens = !print_tokens;
-                        println!(
-                            "Tokens {}",
-                            if print_tokens { "enabled" } else { "disabled" }
-                        );
+                        repl.toggle_tokens();
                         continue;
                     }
                     "_ast" => {
-                        print_ast = !print_ast;
-                        println!("AST {}", if print_ast { "enabled" } else { "disabled" });
+                        repl.toggle_ast();
                         continue;
                     }
                     "" => continue,
-                    _ => {
-                        if !print_ast && !print_tokens {
-                            println!("Line: {}", line)
-                        }
-                    }
+                    _ => {}
                 }
 
-                let mut l = Lexer::new(&line);
-                let mut tokens = vec![];
+                let tokens = Lexer::new(&line).lex();
 
-                if print_tokens {
-                    println!("Tokens for: {}", line);
+                if repl.print_tokens {
+                    println!("{:#?}", tokens);
                 }
 
-                loop {
-                    let token = l.next_token();
-                    if token.token_type == TokenType::Eof {
-                        if print_tokens {
-                            println!("{:#?}", tokens);
-                        }
-                        break;
-                    }
-                    tokens.push(token);
-                }
+                let ast = Parser::parse(&mut tokens.into_iter());
 
-                if print_ast {
-                    println!("AST for: {}", line);
-                    Parser::parse(&mut tokens.into_iter());
+                if repl.print_ast {
+                    println!("AST: {:#?}", ast)
                 }
             }
             Err(ReadlineError::Interrupted) => {

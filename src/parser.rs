@@ -42,7 +42,7 @@ impl Parser {
                 }
                 TokenType::LoopEnd => {}
                 TokenType::PtrLeft | TokenType::PtrRight => {
-                    let statement = Statement {
+                    ast.push(Statement {
                         value: Some(match token.token_type {
                             TokenType::PtrLeft => Value::Dec,
                             TokenType::PtrRight => Value::Inc,
@@ -50,12 +50,10 @@ impl Parser {
                         }),
                         kind: StatementKind::Ptr,
                         children: vec![],
-                    };
-
-                    ast.push(statement);
+                    });
                 }
                 TokenType::Inc | TokenType::Dec => {
-                    let statement = Statement {
+                    ast.push(Statement {
                         value: Some(match token.token_type {
                             TokenType::Dec => Value::Dec,
                             TokenType::Inc => Value::Inc,
@@ -63,12 +61,10 @@ impl Parser {
                         }),
                         kind: StatementKind::Math,
                         children: vec![],
-                    };
-
-                    ast.push(statement);
+                    });
                 }
                 TokenType::Read | TokenType::Write => {
-                    let statement = Statement {
+                    ast.push(Statement {
                         value: Some(match token.token_type {
                             TokenType::Read => Value::In,
                             TokenType::Inc => Value::Out,
@@ -76,16 +72,13 @@ impl Parser {
                         }),
                         kind: StatementKind::Io,
                         children: vec![],
-                    };
-
-                    ast.push(statement);
+                    });
                 }
                 TokenType::Illegal => {}
                 TokenType::Eof => break,
             };
         }
 
-        println!("{:#?}", ast);
         ast
     }
 }

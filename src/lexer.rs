@@ -44,6 +44,20 @@ impl Lexer {
         lexer
     }
 
+    pub fn lex(&mut self) -> Vec<Token> {
+        let mut tokens = vec![];
+
+        loop {
+            let token = self.next_token();
+            if token.token_type == TokenType::Eof {
+                break;
+            }
+            tokens.push(token);
+        }
+
+        tokens
+    }
+
     pub fn read_char(&mut self) {
         if self.read_position >= self.input.chars().count() {
             self.ch = '0';
@@ -92,10 +106,10 @@ mod lexer_tests {
 
     #[test]
     fn next_token_recognize_all_tokens() {
-        let mut l = Lexer::new("+<>-,.[]");
+        let mut lexer = Lexer::new("+<>-,.[]");
 
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 position: 0,
                 token_type: TokenType::Inc,
@@ -103,7 +117,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 position: 1,
                 token_type: TokenType::PtrLeft,
@@ -111,7 +125,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 position: 2,
                 token_type: TokenType::PtrRight,
@@ -119,7 +133,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 position: 3,
                 token_type: TokenType::Dec,
@@ -127,7 +141,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 token_type: TokenType::Read,
                 position: 4,
@@ -135,7 +149,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 token_type: TokenType::Write,
                 literal: '.',
@@ -143,7 +157,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 token_type: TokenType::LoopStart,
                 position: 6,
@@ -151,7 +165,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 token_type: TokenType::LoopEnd,
                 literal: ']',
@@ -159,7 +173,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 position: 8,
                 token_type: TokenType::Eof,
@@ -170,9 +184,9 @@ mod lexer_tests {
 
     #[test]
     fn next_token_recognize_illegal_token() {
-        let mut l = Lexer::new("ab");
+        let mut lexer = Lexer::new("ab");
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 token_type: TokenType::Illegal,
                 position: 0,
@@ -180,7 +194,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 token_type: TokenType::Illegal,
                 position: 1,
@@ -188,7 +202,7 @@ mod lexer_tests {
             }
         );
         assert_eq!(
-            l.next_token(),
+            lexer.next_token(),
             Token {
                 position: 2,
                 token_type: TokenType::Eof,
