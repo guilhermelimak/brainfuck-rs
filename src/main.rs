@@ -58,11 +58,9 @@ fn main() {
                     tokens.push(token);
                 }
 
-                let mut parser = Parser::new(tokens);
-
                 if print_ast {
                     println!("AST for: {}", line);
-                    parser.parse();
+                    Parser::parse(&mut tokens.into_iter());
                 }
             }
             Err(ReadlineError::Interrupted) => {

@@ -6,10 +6,12 @@ use crate::lexer::{Token, TokenType};
 enum Value {
     Inc,
     Dec,
+    In,
+    Out,
 }
 
 #[derive(Clone, Copy, Debug)]
-enum Kind {
+enum StatementKind {
     Loop,
     Ptr,
     Io,
@@ -18,65 +20,27 @@ enum Kind {
 
 #[derive(Clone, Debug)]
 pub struct Statement {
-    token: Token,
-    start: usize,
-    kind: Kind,
-    end: usize,
+    kind: StatementKind,
     children: Vec<Statement>,
     value: Option<Value>,
 }
 
-pub struct Parser {
-    pub tokens: IntoIter<Token>,
-    pub current_token: Option<Token>,
-    pub peek_token: Option<Token>,
-}
+pub struct Parser {}
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Parser {
-        Parser {
-            tokens: tokens.into_iter(),
-            current_token: None,
-            peek_token: None,
-        }
-    }
-
-    fn next_token(&mut self) -> Option<Token> {
-        self.current_token = self.peek_token;
-        self.peek_token = self.tokens.next();
-        self.peek_token
-    }
-
-    pub fn parse(&mut self) -> Vec<Statement> {
-        let mut depth = 0;
+    pub fn parse(tokens: &mut IntoIter<Token>) -> Vec<Statement> {
         let mut ast: Vec<Statement> = vec![];
-        let mut current_statement: Option<Statement> = None;
 
-        while let Some(token) = self.next_token() {
-            println!("Some(token){:#?}", token);
+        while let Some(token) = tokens.next() {
             match token.token_type {
                 TokenType::LoopStart => {
-                    depth += 1;
-                    current_statement = Some(Statement {
-                        token,
-                        kind: Kind::Loop,
-                        start: token.position,
+                    ast.push(Statement {
+                        kind: StatementKind::Loop,
                         value: None,
-                        end: 0,
-                        children: vec![],
-                    })
+                        children: Parser::parse(tokens),
+                    });
                 }
-                TokenType::LoopEnd => match current_statement.clone() {
-                    Some(mut st) => {
-                        depth -= 1;
-
-                        if depth == 0 {
-                            st.end = token.position;
-                            ast.push(st);
-                        };
-                    }
-                    None => panic!("Error, finishing unstarted loop at {}", token.position),
-                },
+                TokenType::LoopEnd => {}
                 TokenType::PtrLeft | TokenType::PtrRight => {
                     let statement = Statement {
                         value: Some(match token.token_type {
@@ -84,20 +48,11 @@ impl Parser {
                             TokenType::PtrRight => Value::Inc,
                             _ => panic!("Invalid value"),
                         }),
-                        kind: Kind::Ptr,
+                        kind: StatementKind::Ptr,
                         children: vec![],
-                        token,
-                        start: token.position,
-                        end: token.position,
                     };
 
-                    match current_statement.clone() {
-                        Some(mut st) => {
-                            st.children.push(statement);
-                            current_statement = Some(st);
-                        }
-                        None => ast.push(statement),
-                    }
+                    ast.push(statement);
                 }
                 TokenType::Inc | TokenType::Dec => {
                     let statement = Statement {
@@ -106,23 +61,25 @@ impl Parser {
                             TokenType::Inc => Value::Inc,
                             _ => panic!("Invalid value"),
                         }),
-                        kind: Kind::Math,
+                        kind: StatementKind::Math,
                         children: vec![],
-                        token,
-                        start: token.position,
-                        end: token.position,
                     };
 
-                    match current_statement.clone() {
-                        Some(mut st) => {
-                            st.children.push(statement);
-                            current_statement = Some(st)
-                        }
-                        None => ast.push(statement),
-                    }
+                    ast.push(statement);
                 }
-                TokenType::Read => todo!(),
-                TokenType::Write => todo!(),
+                TokenType::Read | TokenType::Write => {
+                    let statement = Statement {
+                        value: Some(match token.token_type {
+                            TokenType::Read => Value::In,
+                            TokenType::Inc => Value::Out,
+                            _ => panic!("Invalid value"),
+                        }),
+                        kind: StatementKind::Io,
+                        children: vec![],
+                    };
+
+                    ast.push(statement);
+                }
                 TokenType::Illegal => {}
                 TokenType::Eof => break,
             };
