@@ -1,5 +1,6 @@
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+mod interpreter;
 mod lexer;
 mod parser;
 
@@ -39,8 +40,8 @@ fn main() {
     let mut rl = Editor::<()>::new();
 
     let mut repl = Repl {
-        print_tokens: true,
         print_ast: true,
+        print_tokens: false,
     };
 
     loop {
