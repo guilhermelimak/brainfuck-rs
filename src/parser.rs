@@ -3,29 +3,40 @@ use std::vec::IntoIter;
 use crate::lexer::{Token, TokenType};
 
 #[derive(Clone, Copy, Debug)]
-enum Value {
+pub enum Value {
     Inc,
     Dec,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum IoMode {
     In,
     Out,
 }
 
 #[derive(Clone, Copy, Debug)]
-enum StatementKind {
+pub enum StatementKind {
     Loop,
-    Ptr,
-    Io,
-    Math,
+    Ptr(Value),
+    Math(Value),
+    Io(IoMode),
 }
 
 #[derive(Clone, Debug)]
 pub struct Statement {
-    kind: StatementKind,
-    children: Vec<Statement>,
-    value: Option<Value>,
+    pub kind: StatementKind,
+    pub children: Vec<Statement>,
 }
 
 pub struct Parser {}
+
+fn get_value(token_type: TokenType) -> Value {
+    match token_type {
+        TokenType::PtrLeft | TokenType::Dec => Value::Dec,
+        TokenType::PtrRight | TokenType::Inc => Value::Inc,
+        _ => panic!("The token type {:?} doesn't have a value", token_type),
+    }
+}
 
 impl Parser {
     pub fn parse(tokens: &mut IntoIter<Token>) -> Vec<Statement> {
@@ -36,46 +47,34 @@ impl Parser {
                 TokenType::LoopStart => {
                     ast.push(Statement {
                         kind: StatementKind::Loop,
-                        value: None,
                         children: Parser::parse(tokens),
                     });
                 }
-                TokenType::LoopEnd => {}
                 TokenType::PtrLeft | TokenType::PtrRight => {
                     ast.push(Statement {
-                        value: Some(match token.token_type {
-                            TokenType::PtrLeft => Value::Dec,
-                            TokenType::PtrRight => Value::Inc,
-                            _ => panic!("Invalid value"),
-                        }),
-                        kind: StatementKind::Ptr,
+                        kind: StatementKind::Ptr(get_value(token.token_type)),
                         children: vec![],
                     });
                 }
                 TokenType::Inc | TokenType::Dec => {
                     ast.push(Statement {
-                        value: Some(match token.token_type {
-                            TokenType::Dec => Value::Dec,
-                            TokenType::Inc => Value::Inc,
-                            _ => panic!("Invalid value"),
-                        }),
-                        kind: StatementKind::Math,
+                        kind: StatementKind::Math(get_value(token.token_type)),
                         children: vec![],
                     });
                 }
                 TokenType::Read | TokenType::Write => {
+                    let value = match token.token_type {
+                        TokenType::Read => IoMode::In,
+                        TokenType::Write => IoMode::Out,
+                        _ => panic!("No value for token type"),
+                    };
                     ast.push(Statement {
-                        value: Some(match token.token_type {
-                            TokenType::Read => Value::In,
-                            TokenType::Inc => Value::Out,
-                            _ => panic!("Invalid value"),
-                        }),
-                        kind: StatementKind::Io,
+                        kind: StatementKind::Io(value),
                         children: vec![],
                     });
                 }
-                TokenType::Illegal => {}
                 TokenType::Eof => break,
+                TokenType::Illegal | _ => {}
             };
         }
 
