@@ -4,7 +4,7 @@ mod interpreter;
 mod lexer;
 mod parser;
 
-use crate::{lexer::Lexer, parser::Parser};
+use crate::{interpreter::Vm, lexer::Lexer, parser::Parser};
 struct Repl {
     print_tokens: bool,
     print_ast: bool,
@@ -69,6 +69,7 @@ fn main() {
 
                 let ast = Parser::parse(&mut tokens.into_iter());
 
+                Vm::new(ast.clone());
                 if repl.print_ast {
                     println!("AST: {:#?}", ast)
                 }

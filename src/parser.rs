@@ -30,11 +30,14 @@ pub struct Statement {
 
 pub struct Parser {}
 
-fn get_value(token_type: TokenType) -> Value {
-    match token_type {
+fn get_value(token: Token) -> Value {
+    match token.token_type {
         TokenType::PtrLeft | TokenType::Dec => Value::Dec,
         TokenType::PtrRight | TokenType::Inc => Value::Inc,
-        _ => panic!("The token type {:?} doesn't have a value", token_type),
+        _ => panic!(
+            "Wrong token type {:?} doesn't have a value",
+            token.token_type
+        ),
     }
 }
 
@@ -52,13 +55,13 @@ impl Parser {
                 }
                 TokenType::PtrLeft | TokenType::PtrRight => {
                     ast.push(Statement {
-                        kind: StatementKind::Ptr(get_value(token.token_type)),
+                        kind: StatementKind::Ptr(get_value(token)),
                         children: vec![],
                     });
                 }
                 TokenType::Inc | TokenType::Dec => {
                     ast.push(Statement {
-                        kind: StatementKind::Math(get_value(token.token_type)),
+                        kind: StatementKind::Math(get_value(token)),
                         children: vec![],
                     });
                 }
