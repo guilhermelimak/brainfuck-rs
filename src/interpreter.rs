@@ -38,7 +38,11 @@ impl Vm {
         for st in pg.into_iter() {
             match st.kind {
                 StatementKind::Loop => {
-                    if st.children.len() > 0 {
+                    if st.children.len() <= 0 {
+                        return;
+                    }
+
+                    while self.get_cell() != 0 {
                         self.run_statements(st.children.clone());
                     }
                 }
@@ -124,6 +128,14 @@ mod interpreter_tests {
     fn loop_statements() {
         let mut vm = vm_with_input("+++++[-]");
         vm.run();
-        assert_eq!(vm.memory.get(0).unwrap(), &1);
+        assert_eq!(vm.memory.get(0).unwrap(), &0);
+
+        let mut vm = vm_with_input("+++++[->]");
+        vm.run();
+        assert_eq!(vm.memory.get(0).unwrap(), &4);
+
+        let mut vm = vm_with_input("+++++[-->]");
+        vm.run();
+        assert_eq!(vm.memory.get(0).unwrap(), &3);
     }
 }
