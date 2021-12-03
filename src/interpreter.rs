@@ -1,6 +1,8 @@
+use std::vec::IntoIter;
+
 use crate::parser::{IoMode, Statement, StatementKind, Value};
 pub struct Vm {
-    pub program: Vec<Statement>,
+    pub program: IntoIter<Statement>,
     pub memory: Vec<usize>,
     pub index: usize,
 }
@@ -10,14 +12,16 @@ const MEMORY_SIZE: usize = 30000;
 impl Vm {
     pub fn new(ast: Vec<Statement>) -> Vm {
         return Vm {
-            program: ast,
+            program: ast.into_iter(),
             memory: vec![0; MEMORY_SIZE],
             index: 0,
         };
     }
 
+    pub fn step(&mut self) {}
+
     pub fn run(&mut self) {
-        self.run_statements(self.program.clone())
+        self.run_statements(self.program.clone().into_iter())
     }
 
     fn get_cell(&mut self) -> usize {
@@ -34,55 +38,58 @@ impl Vm {
         self.memory[self.index] = value;
     }
 
-    pub fn run_statements(&mut self, pg: Vec<Statement>) {
-        for st in pg.into_iter() {
-            match st.kind {
-                StatementKind::Loop => {
-                    if st.children.len() <= 0 {
+    pub fn run_statements(&mut self, pg: IntoIter<Statement>) {
+        for st in pg {
+            self.run_statement(st)
+        }
+    }
+
+    pub fn run_statement(&mut self, st: Statement) {
+        match st.kind {
+            StatementKind::Loop => {
+                if st.children.len() <= 0 {
+                    return;
+                }
+                while self.get_cell() != 0 {
+                    self.run_statements(st.children.clone().into_iter());
+                }
+            }
+            StatementKind::Io(val) => match val {
+                IoMode::In => todo!(),
+                IoMode::Out => todo!(),
+            },
+            StatementKind::Ptr(val) => match val {
+                Value::Inc => {
+                    if self.index < MEMORY_SIZE {
+                        self.index = self.index + 1;
+                    }
+                }
+                Value::Dec => {
+                    if self.index > 0 {
+                        self.index = self.index - 1;
+                    }
+                }
+            },
+            StatementKind::Math(val) => match val {
+                Value::Inc => {
+                    let cell = self.get_cell();
+
+                    if cell == usize::MAX {
                         return;
                     }
 
-                    while self.get_cell() != 0 {
-                        self.run_statements(st.children.clone());
-                    }
+                    self.set_cell(cell + 1);
                 }
-                StatementKind::Io(val) => match val {
-                    IoMode::In => todo!(),
-                    IoMode::Out => todo!(),
-                },
-                StatementKind::Ptr(val) => match val {
-                    Value::Inc => {
-                        if self.index < MEMORY_SIZE {
-                            self.index = self.index + 1;
-                        }
-                    }
-                    Value::Dec => {
-                        if self.index > 0 {
-                            self.index = self.index - 1;
-                        }
-                    }
-                },
-                StatementKind::Math(val) => match val {
-                    Value::Inc => {
-                        let cell = self.get_cell();
+                Value::Dec => {
+                    let cell = self.get_cell();
 
-                        if cell == usize::MAX {
-                            return;
-                        }
-
-                        self.set_cell(cell + 1);
+                    if cell <= 0 {
+                        return;
                     }
-                    Value::Dec => {
-                        let cell = self.get_cell();
 
-                        if cell <= 0 {
-                            return;
-                        }
-
-                        self.set_cell(cell - 1);
-                    }
-                },
-            }
+                    self.set_cell(cell - 1);
+                }
+            },
         }
     }
 }
